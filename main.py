@@ -36,12 +36,13 @@ def coerce(key, value):
 # Defaults
 # -----------------------------
 defaults = {
-    "port": 8318,
-    "workers": 1,
-    "debug": False,
-    "log_level": "info",
-    "api_key": "default-secret-000",
+  "workers": 14,
+  "debug": True,
+  "log_level": "debug",
+  "port": 8318,
+  "api_key": "****"
 }
+
 
 
 @app.get("/effective-config")
