@@ -36,7 +36,7 @@ def coerce(key, value):
 # Defaults
 # -----------------------------
 defaults = {
-    "port": 8000,
+    "port": 8318,
     "workers": 1,
     "debug": False,
     "log_level": "info",
