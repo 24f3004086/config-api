@@ -1,0 +1,4 @@
+workers: 1
+debug: false
+log_level: info
+api_key: key-p6hgz303qi
