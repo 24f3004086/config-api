@@ -1,82 +1,70 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-
-from dotenv import dotenv_values
+from dotenv import load_dotenv
 import yaml
 import os
 
 app = FastAPI()
 
-# Allow every origin
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# -----------------------------
-# Helper function
-# -----------------------------
-def to_bool(value):
-    return str(value).lower() in ["true", "1", "yes", "on"]
+# Load .env
+load_dotenv()
 
-
-def coerce(key, value):
-    if key in ["port", "workers"]:
-        return int(value)
-
-    if key == "debug":
-        return to_bool(value)
-
-    return str(value)
-
-
-# -----------------------------
-# Defaults
-# -----------------------------
-defaults = {
-  "workers": 14,
-  "debug": True,
-  "log_level": "debug",
-  "port": 8318,
-  "api_key": "****"
+# Default configuration
+DEFAULTS = {
+    "port": 8000,
+    "workers": 1,
+    "debug": False,
+    "log_level": "info",
+    "api_key": "default-secret-000",
 }
 
 
+def load_yaml():
+    """Load config.development.yaml if it exists."""
+    try:
+        with open("config.development.yaml", "r") as f:
+            return yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        return {}
 
-@app.get("/effective-config")
-def effective_config(set: list[str] = Query(default=[])):
 
-    # Start with defaults
-    config = defaults.copy()
+def load_dotenv_config():
+    """Read values from .env (already loaded into os.environ)."""
+    config = {}
 
-    # -------------------------
-    # YAML
-    # -------------------------
-    with open("config.development.yaml") as f:
-        yaml_data = yaml.safe_load(f)
+    mapping = {
+        "PORT": "port",
+        "DEBUG": "debug",
+        "LOG_LEVEL": "log_level",
+        "API_KEY": "api_key",
+    }
 
-    for k, v in yaml_data.items():
-        config[k] = coerce(k, v)
+    for env_key, config_key in mapping.items():
+        value = os.getenv(env_key)
+        if value is not None:
+            config[config_key] = value
 
-    # -------------------------
-    # .env
-    # -------------------------
-    env_data = dotenv_values(".env")
+    # Special alias
+    num_workers = os.getenv("NUM_WORKERS")
+    if num_workers is not None:
+        config["workers"] = num_workers
 
-    for k, v in env_data.items():
+    return config
 
-        if k == "NUM_WORKERS":
-            k = "workers"
 
-        key = k.lower()
+def load_os_config():
+    """Read APP_* environment variables."""
+    config = {}
 
-        config[key] = coerce(key, v)
-
-    # -------------------------
-    # OS Environment Variables
-    # -------------------------
     mapping = {
         "APP_PORT": "port",
         "APP_WORKERS": "workers",
@@ -85,29 +73,58 @@ def effective_config(set: list[str] = Query(default=[])):
         "APP_API_KEY": "api_key",
     }
 
-    for env_name, config_name in mapping.items():
+    for env_key, config_key in mapping.items():
+        value = os.getenv(env_key)
+        if value is not None:
+            config[config_key] = value
 
-        if env_name in os.environ:
-            config[config_name] = coerce(
-                config_name,
-                os.environ[env_name],
-            )
+    return config
 
-    # -------------------------
-    # CLI Overrides
-    # -------------------------
+
+def coerce_types(config):
+    """Convert values to required types."""
+
+    if "port" in config:
+        config["port"] = int(config["port"])
+
+    if "workers" in config:
+        config["workers"] = int(config["workers"])
+
+    if "debug" in config:
+        config["debug"] = str(config["debug"]).lower() in (
+            "true",
+            "1",
+            "yes",
+            "on",
+        )
+
+    if "log_level" in config:
+        config["log_level"] = str(config["log_level"])
+
+    return config
+
+
+@app.get("/effective-config")
+def effective_config(set: list[str] = Query(default=[])):
+    # Merge configuration layers
+    config = DEFAULTS.copy()
+    config.update(load_yaml())
+    config.update(load_dotenv_config())
+    config.update(load_os_config())
+
+    # Apply CLI overrides
+    overrides = {}
     for item in set:
+        if "=" in item:
+            key, value = item.split("=", 1)
+            overrides[key] = value
 
-        if "=" not in item:
-            continue
+    config.update(overrides)
 
-        key, value = item.split("=", 1)
+    # Convert types
+    config = coerce_types(config)
 
-        config[key] = coerce(key, value)
-
-    # -------------------------
-    # Mask secret
-    # -------------------------
+    # Mask API key
     config["api_key"] = "****"
 
     return config
