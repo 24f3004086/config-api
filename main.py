@@ -48,22 +48,23 @@ def load_dotenv_config():
     return config
 
 def load_os_config():
-    """Read APP_* environment variables."""
     config = {}
 
     mapping = {
-    "APP_PORT": "port",
-    "APP_WORKERS": "workers",
-    "APP_DEBUG": "debug",
-    "APP_LOG_LEVEL": "log_level",
-    "APP_API_KEY": "api_key",
-        }
+        "APP_PORT": "port",
+        "APP_WORKERS": "workers",
+        "APP_DEBUG": "debug",
+        "APP_LOG_LEVEL": "log_level",
+        "APP_API_KEY": "api_key",
+    }
+
     for env_key, config_key in mapping.items():
         value = os.getenv(env_key)
         if value is not None:
             config[config_key] = value
 
     return config
+    
 
 
 def coerce_types(config):
