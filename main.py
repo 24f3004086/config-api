@@ -114,3 +114,13 @@ def effective_config(set: list[str] = Query(default=[])):
     config["api_key"] = "****"
 
     return config
+
+@app.get("/debug-env")
+def debug_env():
+    return {
+        "APP_PORT": os.getenv("APP_PORT"),
+        "APP_WORKERS": os.getenv("APP_WORKERS"),
+        "APP_DEBUG": os.getenv("APP_DEBUG"),
+        "APP_LOG_LEVEL": os.getenv("APP_LOG_LEVEL"),
+        "APP_API_KEY": os.getenv("APP_API_KEY"),
+    }
