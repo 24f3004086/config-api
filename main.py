@@ -38,41 +38,26 @@ def load_yaml():
 
 
 def load_dotenv_config():
-    """Read values from .env (already loaded into os.environ)."""
     config = {}
 
-    mapping = {
-        "PORT": "port",
-        "DEBUG": "debug",
-        "LOG_LEVEL": "log_level",
-        "API_KEY": "api_key",
-    }
-
-    for env_key, config_key in mapping.items():
-        value = os.getenv(env_key)
-        if value is not None:
-            config[config_key] = value
-
-    # Special alias
+    # Only alias required by the assignment
     num_workers = os.getenv("NUM_WORKERS")
     if num_workers is not None:
         config["workers"] = num_workers
 
     return config
 
-
 def load_os_config():
     """Read APP_* environment variables."""
     config = {}
 
     mapping = {
-        "APP_PORT": "port",
-        "APP_WORKERS": "workers",
-        "APP_DEBUG": "debug",
-        "APP_LOG_LEVEL": "log_level",
-        "APP_API_KEY": "api_key",
-    }
-
+    "APP_PORT": "port",
+    "APP_WORKERS": "workers",
+    "APP_DEBUG": "debug",
+    "APP_LOG_LEVEL": "log_level",
+    "APP_API_KEY": "api_key",
+        }
     for env_key, config_key in mapping.items():
         value = os.getenv(env_key)
         if value is not None:
